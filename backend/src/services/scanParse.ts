@@ -115,7 +115,7 @@ export function parseImagePayload(image: unknown): { mime: string; base64: strin
   throw new Error('Image invalide (JPEG, PNG, WebP ou HEIC en base64)');
 }
 
-export function assertImageSize(base64: string, maxBytes = 15 * 1024 * 1024): void {
+export function assertImageSize(base64: string, maxBytes = 50 * 1024 * 1024): void {
   const bytes = Math.floor((base64.length * 3) / 4);
   if (bytes > maxBytes) {
     throw new Error(`Image trop lourde (${Math.round(bytes / 1024 / 1024)} Mo, max ${Math.round(maxBytes / 1024 / 1024)} Mo)`);

@@ -1,9 +1,8 @@
 import sharp from 'sharp';
 
-export const LABEL_IMAGE_MAX_SIDE = 768;
-export const LABEL_IMAGE_RETRY_SIDE = 512;
+export const LABEL_IMAGE_MAX_SIDE = 448;
 
-/** Recadre / réencode en JPEG baseline. Les HEIC et 12 Mpx iPhone cassent souvent les VLM (EOF). */
+/** Recadre / réencode en JPEG baseline. Les HEIC et images HD cassent souvent les VLM (EOF). */
 export async function normalizeLabelImage(base64: string, maxSide = LABEL_IMAGE_MAX_SIDE): Promise<string> {
   const input = Buffer.from(base64, 'base64');
   if (input.length < 32) {
@@ -35,11 +34,4 @@ export async function normalizeLabelImage(base64: string, maxSide = LABEL_IMAGE_
     const message = error instanceof Error ? error.message : 'conversion impossible';
     throw new Error(`Impossible de préparer la photo pour Ollama (${message})`);
   }
-}
-
-export function isModelImageCrash(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /unexpected eof|error was encountered while running the model|failed to decode image|image decode|interrompu la lecture/i.test(
-    message,
-  );
 }

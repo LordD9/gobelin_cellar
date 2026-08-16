@@ -1,7 +1,7 @@
 import { badRequest } from '../http/errors';
 import type { EnrichScanResponse, LabelScanResponse, WineEnrichment, WineIdentification } from '../types/scan';
 import { HttpError } from '../http/errors';
-import { isModelImageCrash, LABEL_IMAGE_MAX_SIDE, LABEL_IMAGE_RETRY_SIDE, normalizeLabelImage } from './labelImage';
+import { LABEL_IMAGE_MAX_SIDE, normalizeLabelImage } from './labelImage';
 import { ollamaChat } from './ollama';
 import {
   assertImageSize,
@@ -70,24 +70,7 @@ export async function analyzeLabel(image: unknown): Promise<LabelScanResponse> {
   const settings = await getSettings();
   const prepared = await normalizeLabelImage(base64, LABEL_IMAGE_MAX_SIDE);
 
-  let content: string;
-  try {
-    content = await askVision(settings.ollama_url, settings.vlm_model, prepared);
-  } catch (error) {
-    if (!isModelImageCrash(error)) throw error;
-    const smaller = await normalizeLabelImage(base64, LABEL_IMAGE_RETRY_SIDE);
-    try {
-      content = await askVision(settings.ollama_url, settings.vlm_model, smaller);
-    } catch (retryError) {
-      if (isModelImageCrash(retryError) || retryError instanceof HttpError) {
-        throw new HttpError(
-          502,
-          "Le modèle n'a pas pu lire cette photo (souvent une image iPhone trop lourde). Recadre l'étiquette et réessaie.",
-        );
-      }
-      throw retryError;
-    }
-  }
+  const content = await askVision(settings.ollama_url, settings.vlm_model, prepared);
 
   const identification = identificationFromModel(extractJsonObject(content));
   if (!identification.domaine && !identification.raw_text) {
