@@ -5,7 +5,7 @@
 #   Error: /lib/x86_64-linux-gnu/libm.so.6: version `GLIBC_2.38' not found
 # On recompile aussi sqlite3 dans l'image pour ne pas dépendre d'un prébuild.
 
-ARG NODE_IMAGE=node:22-trixie-slim
+ARG NODE_IMAGE=node:26-trixie-slim
 
 # --- Frontend --------------------------------------------------------------
 FROM ${NODE_IMAGE} AS frontend

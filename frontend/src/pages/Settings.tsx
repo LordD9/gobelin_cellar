@@ -124,7 +124,7 @@ export function Settings() {
           <h2>Serveur Ollama</h2>
           <p className="muted" style={{ marginBottom: 12 }}>
             Depuis un conteneur Docker, <code>http://host.docker.internal:11434</code> pointe vers Ollama
-            installé sur la machine hôte. Privilégie des modèles 2–3B si la machine a peu de RAM ou de VRAM.
+            installé sur la machine hôte. Privilégie des modèles 2–3B si tu utilises une configuration matérielle modeste.
           </p>
           <label className="field">
             <span>URL</span>
@@ -150,7 +150,7 @@ export function Settings() {
 
         <ModelPicker
           title="Modèle vision (étiquette)"
-          hint="Lit la photo. qwen3-vl:2b est le meilleur compromis OCR / 16 Go."
+          hint="Lit la photo. qwen3-vl:2b est un excellent compromis pour une configuration standard."
           value={vlmModel}
           onChange={setVlmModel}
           suggested={data?.suggested_vlm ?? []}

@@ -4,7 +4,7 @@ export interface SuggestedModel {
   note: string;
 }
 
-/** Modèles vision assez petits pour ~16 Go de RAM (GTX 960 = peu de VRAM, souvent CPU). */
+/** Modèles vision adaptés pour des configurations standards (CPU ou GPU modeste). */
 export const SUGGESTED_VLM_MODELS: SuggestedModel[] = [
   { name: 'qwen3-vl:2b', size: '1.9 Go', note: 'Recommandé — bon OCR d’étiquette' },
   { name: 'moondream', size: '1.7 Go', note: 'Le plus léger' },

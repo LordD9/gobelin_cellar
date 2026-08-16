@@ -14,7 +14,7 @@ Un seul service : interface + API + base SQLite. Conçue pour un NAS, un mini-PC
 
 ## Prérequis
 
-- Docker Engine + Compose v2, **ou** Node.js 22 pour le développement
+- Docker Engine + Compose v2, **ou** Node.js 26 pour le développement
 - Pour le scan d’étiquette : [Ollama](https://ollama.com) joignable depuis l’application (même machine, hôte Docker, ou autre conteneur)
 
 ## Démarrage rapide (image publiée)
@@ -114,7 +114,7 @@ ollama pull llama3.2:3b
 
 Les photos de téléphone (HEIC, 12 Mpx et plus) sont réduites et réencodées en JPEG avant d’être envoyées au modèle, pour éviter les plantages du type `unexpected EOF`.
 
-Après chaque étape, le modèle est déchargé de la mémoire Ollama afin de pouvoir enchaîner vision puis texte sur une machine modestement dotée (environ 16 Go de RAM). Un GPU récent n’est pas obligatoire.
+Après chaque étape, le modèle est déchargé de la mémoire Ollama afin de pouvoir enchaîner vision puis texte sur une machine standard, même sans carte graphique dédiée.
 
 | Rôle | Suggestion | Autres options |
 |---|---|---|
