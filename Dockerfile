@@ -1,8 +1,14 @@
 # Goblin Cellar — image unique (frontend + API + SQLite)
-# Build : docker compose build
+#
+# Debian 13 (trixie) : glibc >= 2.38, requis par les binaires natifs récents
+# de sqlite3. Bookworm (glibc 2.36) provoque :
+#   Error: /lib/x86_64-linux-gnu/libm.so.6: version `GLIBC_2.38' not found
+# On recompile aussi sqlite3 dans l'image pour ne pas dépendre d'un prébuild.
+
+ARG NODE_IMAGE=node:22-trixie-slim
 
 # --- Frontend --------------------------------------------------------------
-FROM node:22-bookworm-slim AS frontend
+FROM ${NODE_IMAGE} AS frontend
 WORKDIR /src
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -10,19 +16,20 @@ COPY frontend/ ./
 RUN npm run build
 
 # --- Backend ---------------------------------------------------------------
-FROM node:22-bookworm-slim AS backend
+FROM ${NODE_IMAGE} AS backend
 WORKDIR /src
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
 COPY backend/package.json backend/package-lock.json ./
-RUN npm ci
+RUN npm ci \
+  && npm rebuild sqlite3 --build-from-source
 COPY backend/ ./
 RUN npm run build \
   && npm prune --omit=dev
 
 # --- Runtime ---------------------------------------------------------------
-FROM node:22-bookworm-slim AS runtime
+FROM ${NODE_IMAGE} AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production \
