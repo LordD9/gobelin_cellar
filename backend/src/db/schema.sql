@@ -1,5 +1,5 @@
 -- Référence lisible du schéma (source exécutée : schema.ts)
--- Tables : locations, wines, apogee_rules
+-- Tables : locations, wines, apogee_rules, app_settings
 
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
@@ -55,3 +55,8 @@ CREATE TABLE IF NOT EXISTS apogee_rules (
 );
 
 CREATE INDEX IF NOT EXISTS idx_apogee_rules_type ON apogee_rules(type);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);

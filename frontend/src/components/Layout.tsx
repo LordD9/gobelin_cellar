@@ -28,10 +28,16 @@ export function Layout({ children }: { children: ReactNode }) {
               {item.label}
             </NavLink>
           ))}
+          <NavLink to="/reglages" className={({ isActive }) => `top-link${isActive ? ' active' : ''}`}>
+            Réglages
+          </NavLink>
           <NavLink to="/vins/nouveau" className="btn btn-primary">
             Ajouter un vin
           </NavLink>
         </nav>
+        <NavLink to="/reglages" className="settings-link" aria-label="Réglages" title="Réglages">
+          ⚙
+        </NavLink>
       </header>
 
       <main className="page">{children}</main>

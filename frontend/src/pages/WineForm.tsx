@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
+import { LabelScan, type ScanDraft } from '../components/LabelScan';
 import type { ApogeeEstimate, ApogeeSource, LocationResponse, WinePayload, WineType } from '../types';
 import { WINE_TYPES } from '../types';
 import { TYPE_LABELS, formatWindow } from '../wineStatus';
@@ -17,6 +18,7 @@ interface FormState {
   cepages: string;
   domaine_info: string;
   accords: string;
+  potentiel_garde: string;
   notes: string;
   apogee_source: ApogeeSource;
   drink_from: string;
@@ -35,6 +37,7 @@ const EMPTY: FormState = {
   cepages: '',
   domaine_info: '',
   accords: '',
+  potentiel_garde: '',
   notes: '',
   apogee_source: 'auto',
   drink_from: '',
@@ -84,6 +87,7 @@ export function WineForm() {
           cepages: wine.cepages ?? '',
           domaine_info: wine.domaine_info ?? '',
           accords: wine.accords ?? '',
+          potentiel_garde: wine.potentiel_garde ?? '',
           notes: wine.notes ?? '',
           apogee_source: wine.apogee_source,
           drink_from: wine.drink_from != null ? String(wine.drink_from) : '',
@@ -122,6 +126,22 @@ export function WineForm() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function applyScan(draft: ScanDraft) {
+    setForm((current) => ({
+      ...current,
+      domaine: draft.domaine ?? current.domaine,
+      cuvee: draft.cuvee ?? current.cuvee,
+      type: draft.type ?? current.type,
+      region: draft.region ?? current.region,
+      appellation: draft.appellation ?? current.appellation,
+      millesime: draft.millesime ?? current.millesime,
+      cepages: draft.cepages ?? current.cepages,
+      domaine_info: draft.domaine_info ?? current.domaine_info,
+      accords: draft.accords ?? current.accords,
+      potentiel_garde: draft.potentiel_garde ?? current.potentiel_garde,
+    }));
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -147,6 +167,7 @@ export function WineForm() {
       cepages: emptyToNull(form.cepages),
       domaine_info: emptyToNull(form.domaine_info),
       accords: emptyToNull(form.accords),
+      potentiel_garde: emptyToNull(form.potentiel_garde),
       notes: emptyToNull(form.notes),
       apogee_source: form.apogee_source,
     };
@@ -176,13 +197,14 @@ export function WineForm() {
       <div className="page-head">
         <div>
           <h1>{editing ? 'Modifier la fiche' : 'Nouvelle bouteille'}</h1>
-          <p className="lede">Les champs essentiels suffisent. L'apogée se calcule toute seule si tu laisses le mode auto.</p>
+          <p className="lede">Photo de l'étiquette ou saisie manuelle. L'apogée se calcule toute seule en mode auto.</p>
         </div>
       </div>
 
       {error && <div className="banner error">{error}</div>}
 
       <form className="form" onSubmit={(event) => void onSubmit(event)}>
+        <LabelScan onApply={applyScan} />
         <section className="form-section glass">
           <h2>L'essentiel</h2>
           <label className="field">
@@ -297,6 +319,10 @@ export function WineForm() {
           <label className="field">
             <span>Accords mets & vins</span>
             <textarea value={form.accords} onChange={(e) => update('accords', e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Potentiel de garde</span>
+            <textarea value={form.potentiel_garde} onChange={(e) => update('potentiel_garde', e.target.value)} />
           </label>
           <label className="field">
             <span>Le domaine</span>

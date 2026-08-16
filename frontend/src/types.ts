@@ -97,3 +97,72 @@ export interface WineListFilters {
   q?: string;
   drink?: 'this_year' | 'past_peak' | 'not_ready';
 }
+
+export interface SuggestedModel {
+  name: string;
+  size: string;
+  note: string;
+}
+
+export interface OllamaModelInfo {
+  name: string;
+  size: number | null;
+  modified_at: string | null;
+  vision: boolean;
+}
+
+export interface OllamaStatus {
+  online: boolean;
+  version: string | null;
+  models: OllamaModelInfo[];
+  error: string | null;
+}
+
+export interface AppSettings {
+  ollama_url: string;
+  vlm_model: string;
+  llm_model: string;
+  searxng_url: string | null;
+}
+
+export interface SettingsResponse extends AppSettings {
+  suggested_vlm: SuggestedModel[];
+  suggested_llm: SuggestedModel[];
+  ollama: OllamaStatus;
+}
+
+export interface WineIdentification {
+  domaine: string | null;
+  cuvee: string | null;
+  type: WineType | null;
+  region: string | null;
+  appellation: string | null;
+  millesime: number | null;
+  cepages: string | null;
+  raw_text: string;
+  confidence: number;
+}
+
+export interface SearchSource {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export interface WineEnrichment extends WineIdentification {
+  domaine_info: string | null;
+  accords: string | null;
+  potentiel_garde: string | null;
+  uncertain_fields: string[];
+  sources: SearchSource[];
+}
+
+export interface LabelScanResponse {
+  identification: WineIdentification;
+  model: string;
+}
+
+export interface EnrichScanResponse {
+  enrichment: WineEnrichment;
+  model: string;
+}

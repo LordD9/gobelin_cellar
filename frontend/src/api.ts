@@ -1,8 +1,12 @@
 import type {
   ApogeeEstimate,
   DashboardStats,
+  EnrichScanResponse,
+  LabelScanResponse,
   LocationResponse,
   LocationTreeNode,
+  SettingsResponse,
+  WineIdentification,
   WineListFilters,
   WinePayload,
   WineResponse,
@@ -103,4 +107,65 @@ export const api = {
   ) => request<LocationResponse>(`/locations/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
 
   deleteLocation: (id: number) => request<void>(`/locations/${id}`, { method: 'DELETE' }),
+
+  getSettings: () => request<SettingsResponse>('/settings'),
+
+  saveSettings: (payload: {
+    ollama_url?: string;
+    vlm_model?: string;
+    llm_model?: string;
+    searxng_url?: string | null;
+  }) => request<SettingsResponse>('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
+
+  scanLabel: (image: string) =>
+    request<LabelScanResponse>('/scan/label', { method: 'POST', body: JSON.stringify({ image }) }),
+
+  enrichScan: (identification: WineIdentification) =>
+    request<EnrichScanResponse>('/scan/enrich', {
+      method: 'POST',
+      body: JSON.stringify({ identification }),
+    }),
+
+  pullOllamaModel: async (model: string, onEvent: (event: Record<string, unknown>) => void): Promise<void> => {
+    const res = await fetch(`${API}/settings/ollama/pull`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model }),
+    });
+    if (!res.body) {
+      const data: unknown = await res.json().catch(() => ({}));
+      const message =
+        data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
+          ? data.error
+          : 'Téléchargement impossible';
+      throw new Error(message);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let lastError: string | null = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line) as Record<string, unknown>;
+          if (typeof event.error === 'string') lastError = event.error;
+          onEvent(event);
+        } catch {
+          /* ligne partielle ignorée */
+        }
+      }
+    }
+
+    if (!res.ok || lastError) {
+      throw new Error(lastError || 'Téléchargement du modèle impossible');
+    }
+  },
 };

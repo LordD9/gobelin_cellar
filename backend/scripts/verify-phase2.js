@@ -46,7 +46,15 @@ async function main() {
   const health = await request('GET', '/api/health');
   assert(health.status === 200 && health.data.status === 'ok', 'health failed');
   assert(health.data.tables.includes('apogee_rules'), 'apogee_rules table missing');
+  assert(health.data.tables.includes('app_settings'), 'app_settings table missing');
   console.log('OK health', health.data.tables);
+
+  const settings = await request('GET', '/api/settings');
+  assert(settings.status === 200, 'settings failed');
+  assert(typeof settings.data.ollama_url === 'string', 'settings ollama_url missing');
+  assert(typeof settings.data.vlm_model === 'string', 'settings vlm_model missing');
+  assert(typeof settings.data.llm_model === 'string', 'settings llm_model missing');
+  console.log('OK settings', settings.data.vlm_model, settings.data.llm_model);
 
   const rules = await request('GET', '/api/apogee/rules');
   assert(rules.status === 200 && rules.data.length > 10, 'rules seed failed');

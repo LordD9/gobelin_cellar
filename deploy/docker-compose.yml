@@ -18,6 +18,8 @@ services:
     stop_grace_period: 15s
     ports:
       - "${GOBLIN_CELLAR_PORT:-8080}:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
@@ -25,6 +27,7 @@ services:
       DATABASE_PATH: /data/cave.sqlite
       PUBLIC_DIR: /app/public
       TZ: ${TZ:-Europe/Paris}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
     volumes:
       - ${DATA_DIR:-./data}:/data
     healthcheck:
