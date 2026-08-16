@@ -1,0 +1,58 @@
+# Goblin Cellar — déploiement homelab
+#
+#   cp .env.example .env    # optionnel
+#   docker compose up -d --build
+#
+# L'UI et l'API sont dans le même conteneur.
+# La base SQLite est dans ./data (sauvegarde = copier ce dossier).
+
+name: goblin-cellar
+
+services:
+  goblin-cellar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: goblin-cellar:latest
+    container_name: goblin-cellar
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    ports:
+      - "${GOBLIN_CELLAR_PORT:-8080}:3001"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3001
+      DATABASE_PATH: /data/cave.sqlite
+      PUBLIC_DIR: /app/public
+      TZ: ${TZ:-Europe/Paris}
+    volumes:
+      # Bind mount : visible sur l'hôte, simple à sauvegarder (restic, rsync, kopia…).
+      - ${DATA_DIR:-./data}:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+    # --- Reverse proxy (décommente si tu utilises Traefik) -----------------
+    # labels:
+    #   - traefik.enable=true
+    #   - traefik.http.routers.goblin-cellar.rule=Host(`cave.home.arpa`)
+    #   - traefik.http.routers.goblin-cellar.entrypoints=websecure
+    #   - traefik.http.routers.goblin-cellar.tls=true
+    #   - traefik.http.services.goblin-cellar.loadbalancer.server.port=3001
+    # networks:
+    #   - proxy
+
+# networks:
+#   proxy:
+#     external: true
