@@ -1,5 +1,7 @@
 import { badRequest } from '../http/errors';
 import type { EnrichScanResponse, LabelScanResponse, WineEnrichment, WineIdentification } from '../types/scan';
+import { HttpError } from '../http/errors';
+import { isModelImageCrash, LABEL_IMAGE_MAX_SIDE, LABEL_IMAGE_RETRY_SIDE, normalizeLabelImage } from './labelImage';
 import { ollamaChat } from './ollama';
 import {
   assertImageSize,
@@ -66,19 +68,26 @@ uncertain_fields : noms des champs peu sûrs.`;
 export async function analyzeLabel(image: unknown): Promise<LabelScanResponse> {
   const { base64 } = parseImageOrThrow(image);
   const settings = await getSettings();
+  const prepared = await normalizeLabelImage(base64, LABEL_IMAGE_MAX_SIDE);
 
-  const content = await ollamaChat({
-    baseUrl: settings.ollama_url,
-    model: settings.vlm_model,
-    format: 'json',
-    messages: [
-      {
-        role: 'user',
-        content: VLM_PROMPT,
-        images: [base64],
-      },
-    ],
-  });
+  let content: string;
+  try {
+    content = await askVision(settings.ollama_url, settings.vlm_model, prepared);
+  } catch (error) {
+    if (!isModelImageCrash(error)) throw error;
+    const smaller = await normalizeLabelImage(base64, LABEL_IMAGE_RETRY_SIDE);
+    try {
+      content = await askVision(settings.ollama_url, settings.vlm_model, smaller);
+    } catch (retryError) {
+      if (isModelImageCrash(retryError) || retryError instanceof HttpError) {
+        throw new HttpError(
+          502,
+          "Le modèle n'a pas pu lire cette photo (souvent une image iPhone trop lourde). Recadre l'étiquette et réessaie.",
+        );
+      }
+      throw retryError;
+    }
+  }
 
   const identification = identificationFromModel(extractJsonObject(content));
   if (!identification.domaine && !identification.raw_text) {
@@ -86,6 +95,21 @@ export async function analyzeLabel(image: unknown): Promise<LabelScanResponse> {
   }
 
   return { identification, model: settings.vlm_model };
+}
+
+function askVision(baseUrl: string, model: string, imageBase64: string): Promise<string> {
+  return ollamaChat({
+    baseUrl,
+    model,
+    format: 'json',
+    messages: [
+      {
+        role: 'user',
+        content: VLM_PROMPT,
+        images: [imageBase64],
+      },
+    ],
+  });
 }
 
 export async function enrichIdentification(raw: unknown): Promise<EnrichScanResponse> {

@@ -123,8 +123,8 @@ export function Settings() {
         <section className="form-section glass">
           <h2>Serveur Ollama</h2>
           <p className="muted" style={{ marginBottom: 12 }}>
-            Sur un homeserver Docker, <code>http://host.docker.internal:11434</code> vise Ollama sur l'hôte.
-            Une GTX 960 a trop peu de VRAM : les modèles 2–3B tournent surtout sur les 16 Go de RAM.
+            Depuis un conteneur Docker, <code>http://host.docker.internal:11434</code> pointe vers Ollama
+            installé sur la machine hôte. Privilégie des modèles 2–3B si la machine a peu de RAM ou de VRAM.
           </p>
           <label className="field">
             <span>URL</span>

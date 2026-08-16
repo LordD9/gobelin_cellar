@@ -100,7 +100,9 @@ export function parseImagePayload(image: unknown): { mime: string; base64: strin
     throw new Error('Image manquante');
   }
 
-  const dataUrl = image.trim().match(/^data:(image\/(?:jpeg|jpg|png|webp|gif));base64,([A-Za-z0-9+/=\s]+)$/i);
+  const dataUrl = image
+    .trim()
+    .match(/^data:(image\/[A-Za-z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/i);
   if (dataUrl) {
     const mime = dataUrl[1].toLowerCase() === 'image/jpg' ? 'image/jpeg' : dataUrl[1].toLowerCase();
     return { mime, base64: dataUrl[2].replace(/\s/g, '') };
@@ -110,10 +112,10 @@ export function parseImagePayload(image: unknown): { mime: string; base64: strin
     return { mime: 'image/jpeg', base64: image.replace(/\s/g, '') };
   }
 
-  throw new Error('Image invalide (JPEG, PNG ou WebP en base64)');
+  throw new Error('Image invalide (JPEG, PNG, WebP ou HEIC en base64)');
 }
 
-export function assertImageSize(base64: string, maxBytes = 8 * 1024 * 1024): void {
+export function assertImageSize(base64: string, maxBytes = 15 * 1024 * 1024): void {
   const bytes = Math.floor((base64.length * 3) / 4);
   if (bytes > maxBytes) {
     throw new Error(`Image trop lourde (${Math.round(bytes / 1024 / 1024)} Mo, max ${Math.round(maxBytes / 1024 / 1024)} Mo)`);

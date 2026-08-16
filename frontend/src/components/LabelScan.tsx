@@ -167,7 +167,7 @@ export function LabelScan({ onApply }: Props) {
             ref={cameraRef}
             className="sr-only"
             type="file"
-            accept="image/*"
+            accept="image/*,image/heic,image/heif,.heic,.heif"
             capture="environment"
             onChange={(event) => {
               void onPick(event.target.files?.[0]);
@@ -178,7 +178,7 @@ export function LabelScan({ onApply }: Props) {
             ref={galleryRef}
             className="sr-only"
             type="file"
-            accept="image/*"
+            accept="image/*,image/heic,image/heif,.heic,.heif"
             onChange={(event) => {
               void onPick(event.target.files?.[0]);
               event.target.value = '';

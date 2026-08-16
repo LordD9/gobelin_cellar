@@ -197,7 +197,7 @@ function mapFetchError(error: unknown, baseUrl: string): HttpError {
   if (name === 'TimeoutError' || name === 'AbortError') {
     return new HttpError(
       504,
-      "Ollama n'a pas répondu à temps. Sur 16 Go de RAM, privilégie un modèle 2–3B.",
+      "Ollama n'a pas répondu à temps. Un modèle plus petit, ou une photo plus légère, aide beaucoup.",
     );
   }
   const cause = error instanceof Error ? error.message : 'erreur inconnue';
@@ -214,6 +214,12 @@ function mapOllamaHttpError(message: string, model?: string): HttpError {
   if (/not found|does not exist|pull/i.test(message)) {
     const hint = model ? ` Télécharge « ${model} » depuis Réglages.` : ' Télécharge le modèle depuis Réglages.';
     return new HttpError(400, `Modèle Ollama introuvable.${hint}`);
+  }
+  if (/unexpected eof|error was encountered while running the model/i.test(message)) {
+    return new HttpError(
+      502,
+      "Le modèle a interrompu la lecture de la photo (souvent une image iPhone trop lourde ou HEIC). Réessaie : l'image est désormais réencodée côté serveur.",
+    );
   }
   return new HttpError(502, message);
 }
