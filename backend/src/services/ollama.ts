@@ -218,7 +218,7 @@ function mapOllamaHttpError(message: string, model?: string): HttpError {
   if (/unexpected eof|error was encountered while running the model/i.test(message)) {
     return new HttpError(
       502,
-      "Le modèle a interrompu la lecture de la photo (souvent une image iPhone trop lourde ou HEIC). Réessaie : l'image est désormais réencodée côté serveur.",
+      "Le modèle a interrompu la lecture de la photo (souvent une image iPhone trop lourde ou HEIC).",
     );
   }
   return new HttpError(502, message);

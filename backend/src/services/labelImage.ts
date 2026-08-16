@@ -19,10 +19,9 @@ export async function normalizeLabelImage(base64: string, maxSide = LABEL_IMAGE_
         fit: 'inside',
         withoutEnlargement: true,
       })
-      .removeAlpha()
+      .flatten({ background: '#ffffff' })
       .jpeg({
-        quality: 75,
-        mozjpeg: true,
+        quality: 80,
         chromaSubsampling: '4:2:0',
         force: true,
       })
@@ -40,7 +39,7 @@ export async function normalizeLabelImage(base64: string, maxSide = LABEL_IMAGE_
 
 export function isModelImageCrash(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return /unexpected eof|error was encountered while running the model|failed to decode image|image decode/i.test(
+  return /unexpected eof|error was encountered while running the model|failed to decode image|image decode|interrompu la lecture/i.test(
     message,
   );
 }
