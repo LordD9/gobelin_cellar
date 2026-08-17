@@ -59,12 +59,28 @@ export function WineForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const editing = Boolean(id);
-  const [form, setForm] = useState<FormState>(EMPTY);
+  const [form, setForm] = useState<FormState>(() => {
+    if (!editing) {
+      try {
+        const stored = localStorage.getItem('gobelin_draft_form');
+        if (stored) return JSON.parse(stored) as FormState;
+      } catch {
+        // ignore
+      }
+    }
+    return EMPTY;
+  });
   const [locations, setLocations] = useState<LocationResponse[]>([]);
   const [estimate, setEstimate] = useState<ApogeeEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(!editing);
+
+  useEffect(() => {
+    if (!editing) {
+      localStorage.setItem('gobelin_draft_form', JSON.stringify(form));
+    }
+  }, [form, editing]);
 
   useEffect(() => {
     api.listLocations().then(setLocations).catch(() => undefined);
@@ -179,6 +195,14 @@ export function WineForm() {
     setBusy(true);
     try {
       const saved = editing ? await api.updateWine(Number(id), payload) : await api.createWine(payload);
+      if (!editing) {
+        localStorage.removeItem('gobelin_draft_form');
+        localStorage.removeItem('gobelin_draft_preview');
+        localStorage.removeItem('gobelin_draft_phase');
+        localStorage.removeItem('gobelin_draft_info');
+        localStorage.removeItem('gobelin_draft_ident');
+        localStorage.removeItem('gobelin_draft_enrich');
+      }
       navigate(`/vins/${saved.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Enregistrement impossible');

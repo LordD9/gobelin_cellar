@@ -7,17 +7,69 @@ const FETCH_MS = 10_000;
 export async function searchWineSources(
   identification: WineIdentification,
   searxngUrl: string | null,
+  ollamaUrl: string,
 ): Promise<SearchSource[]> {
   const queries = buildQueries(identification);
+
+  if (searxngUrl) {
+    const buckets = await Promise.all([
+      searchSearxng(searxngUrl, queries[0]).catch(() => []),
+      searchDuckDuckGo(queries[0]).catch(() => []),
+      queries[1] ? searchDuckDuckGo(queries[1]).catch(() => []) : Promise.resolve([]),
+    ]);
+    return dedupeSources(buckets.flat()).slice(0, 8);
+  }
+
+  // Par défaut sans SearXNG : option websearch d'ollama
+  const ollamaResults = await searchOllamaWebSearch(ollamaUrl, queries[0]).catch(() => []);
+  if (ollamaResults.length > 0) {
+    return dedupeSources(ollamaResults).slice(0, 8);
+  }
+
+  // Fallback ultime : DuckDuckGo
   const buckets = await Promise.all([
-    searxngUrl ? searchSearxng(searxngUrl, queries[0]).catch(() => []) : Promise.resolve([]),
-    searchWikipedia(queries[0], 'fr').catch(() => []),
-    searchWikipedia(queries[0], 'en').catch(() => []),
     searchDuckDuckGo(queries[0]).catch(() => []),
     queries[1] ? searchDuckDuckGo(queries[1]).catch(() => []) : Promise.resolve([]),
   ]);
-
   return dedupeSources(buckets.flat()).slice(0, 8);
+}
+
+async function searchOllamaWebSearch(baseUrl: string, query: string): Promise<SearchSource[]> {
+  const url = new URL(baseUrl.replace(/\/$/, '') + '/api/web_search');
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'User-Agent': USER_AGENT,
+    },
+    body: JSON.stringify({ query }),
+    signal: AbortSignal.timeout(FETCH_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama web_search ${response.status}`);
+  }
+
+  const data = (await response.json()) as Record<string, unknown> | unknown[];
+  let results: unknown[] = [];
+  if (Array.isArray(data)) {
+    results = data;
+  } else if (data && typeof data === 'object') {
+    if (Array.isArray(data.results)) results = data.results;
+    else if (Array.isArray(data.hits)) results = data.hits;
+  }
+
+  return results
+    .map((item) => {
+      const record = item as Record<string, unknown>;
+      return {
+        title: String(record.title || record.name || ''),
+        url: String(record.url || record.link || ''),
+        snippet: collapseWhitespace(String(record.content || record.snippet || record.description || '')).slice(0, 400),
+      };
+    })
+    .filter((item) => item.title && item.title !== 'undefined' && item.url && item.url !== 'undefined');
 }
 
 export function buildQueries(identification: WineIdentification): string[] {

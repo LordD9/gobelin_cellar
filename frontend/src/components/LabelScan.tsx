@@ -27,14 +27,45 @@ type Phase = 'photo' | 'reading' | 'identified' | 'searching' | 'ready';
 export function LabelScan({ onApply }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [phase, setPhase] = useState<Phase>('photo');
+  const [preview, setPreview] = useState<string | null>(() => {
+    try { return localStorage.getItem('gobelin_draft_preview'); } catch { return null; }
+  });
+  const [phase, setPhase] = useState<Phase>(() => {
+    try { 
+      const stored = localStorage.getItem('gobelin_draft_phase') as Phase;
+      if (stored === 'reading') return 'photo';
+      if (stored === 'searching') return 'identified';
+      return stored || 'photo';
+    } catch { return 'photo'; }
+  });
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-  const [identification, setIdentification] = useState<WineIdentification | null>(null);
-  const [enrichment, setEnrichment] = useState<WineEnrichment | null>(null);
+  const [info, setInfo] = useState<string | null>(() => {
+    try { return localStorage.getItem('gobelin_draft_info'); } catch { return null; }
+  });
+  const [identification, setIdentification] = useState<WineIdentification | null>(() => {
+    try { const stored = localStorage.getItem('gobelin_draft_ident'); return stored ? JSON.parse(stored) as WineIdentification : null; } catch { return null; }
+  });
+  const [enrichment, setEnrichment] = useState<WineEnrichment | null>(() => {
+    try { const stored = localStorage.getItem('gobelin_draft_enrich'); return stored ? JSON.parse(stored) as WineEnrichment : null; } catch { return null; }
+  });
   const [elapsed, setElapsed] = useState(0);
   const startedAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (preview) localStorage.setItem('gobelin_draft_preview', preview);
+    else localStorage.removeItem('gobelin_draft_preview');
+    
+    localStorage.setItem('gobelin_draft_phase', phase);
+    
+    if (info) localStorage.setItem('gobelin_draft_info', info);
+    else localStorage.removeItem('gobelin_draft_info');
+    
+    if (identification) localStorage.setItem('gobelin_draft_ident', JSON.stringify(identification));
+    else localStorage.removeItem('gobelin_draft_ident');
+    
+    if (enrichment) localStorage.setItem('gobelin_draft_enrich', JSON.stringify(enrichment));
+    else localStorage.removeItem('gobelin_draft_enrich');
+  }, [preview, phase, info, identification, enrichment]);
 
   useEffect(() => {
     if (phase !== 'reading' && phase !== 'searching') {

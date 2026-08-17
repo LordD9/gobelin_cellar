@@ -102,7 +102,7 @@ export async function enrichIdentification(raw: unknown): Promise<EnrichScanResp
   }
 
   const settings = await getSettings();
-  const sources = await searchWineSources(identification, settings.searxng_url);
+  const sources = await searchWineSources(identification, settings.searxng_url, settings.ollama_url);
   const sourcesText = sources
     .map((source, index) => `${index + 1}. ${source.title}\n${source.url}\n${source.snippet}`)
     .join('\n\n');

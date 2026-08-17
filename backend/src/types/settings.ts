@@ -6,22 +6,25 @@ export interface SuggestedModel {
 
 /** Modèles vision adaptés pour des configurations standards (CPU ou GPU modeste). */
 export const SUGGESTED_VLM_MODELS: SuggestedModel[] = [
+  { name: 'ministral-3', size: '2.0 Go', note: 'Recommandé (3b - ~3 Go RAM)' },
+  { name: 'ministral:8b', size: '4.5 Go', note: 'Plus performant (8b - ~6 Go RAM)' },
+  { name: 'ministral:14b', size: '8.0 Go', note: 'Pour grosse configuration (14b - ~10 Go RAM)' },
   { name: 'qwen3-vl:2b', size: '1.9 Go', note: 'Recommandé — bon OCR d’étiquette' },
   { name: 'moondream', size: '1.7 Go', note: 'Le plus léger' },
   { name: 'qwen2.5vl:3b', size: '3.2 Go', note: 'Très lisible sur les labels' },
-  { name: 'qwen3-vl:4b', size: '3.3 Go', note: 'Plus précis si la machine suit' },
 ];
 
 /** Petits LLM pour compléter la fiche après recherche web. */
 export const SUGGESTED_LLM_MODELS: SuggestedModel[] = [
-  { name: 'llama3.2:3b', size: '2.0 Go', note: 'Recommandé — JSON fiable' },
-  { name: 'qwen2.5:3b', size: '1.9 Go', note: 'Bon en français' },
-  { name: 'gemma2:2b', size: '1.6 Go', note: 'Ultra léger' },
-  { name: 'phi3:mini', size: '2.2 Go', note: 'Compact et structuré' },
+  { name: 'ministral-3', size: '2.0 Go', note: 'Recommandé (3b - ~3 Go RAM)' },
+  { name: 'ministral:8b', size: '4.5 Go', note: 'Plus performant (8b - ~6 Go RAM)' },
+  { name: 'ministral:14b', size: '8.0 Go', note: 'Pour grosse configuration (14b - ~10 Go RAM)' },
+  { name: 'llama3.2:3b', size: '2.0 Go', note: 'Alternative — JSON fiable' },
+  { name: 'qwen2.5:3b', size: '1.9 Go', note: 'Alternative — Bon en français' },
 ];
 
-export const DEFAULT_VLM_MODEL = 'qwen3-vl:2b';
-export const DEFAULT_LLM_MODEL = 'llama3.2:3b';
+export const DEFAULT_VLM_MODEL = 'ministral-3';
+export const DEFAULT_LLM_MODEL = 'ministral-3';
 
 export interface AppSettings {
   ollama_url: string;
