@@ -13,13 +13,17 @@ settingsRouter.get('/', async (_req, res) => {
 settingsRouter.put('/', async (req, res) => {
   const body = asRecord(req.body);
   const searxngRaw = optionalString(body.searxng_url, 'searxng_url');
-  const updated = await updateSettings({
+  const providerRaw = optionalString(body.ai_provider, 'ai_provider');
+  const keyRaw = optionalString(body.openrouter_api_key, 'openrouter_api_key');
+  await updateSettings({
+    ai_provider: providerRaw === 'openrouter' ? 'openrouter' : providerRaw === 'ollama' ? 'ollama' : undefined,
     ollama_url: optionalString(body.ollama_url, 'ollama_url') ?? undefined,
     vlm_model: optionalString(body.vlm_model, 'vlm_model') ?? undefined,
     llm_model: optionalString(body.llm_model, 'llm_model') ?? undefined,
     searxng_url: searxngRaw === undefined ? undefined : searxngRaw,
+    openrouter_api_key: keyRaw === undefined ? undefined : keyRaw ?? '',
   });
-  res.json(await getSettingsResponse().then((full) => ({ ...full, ...updated })));
+  res.json(await getSettingsResponse());
 });
 
 settingsRouter.get('/ollama', async (_req, res) => {

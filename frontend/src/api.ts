@@ -5,6 +5,7 @@ import type {
   LabelScanResponse,
   LocationResponse,
   LocationTreeNode,
+  ScanBatchJob,
   SettingsResponse,
   WineIdentification,
   WineListFilters,
@@ -111,10 +112,12 @@ export const api = {
   getSettings: () => request<SettingsResponse>('/settings'),
 
   saveSettings: (payload: {
+    ai_provider?: 'ollama' | 'openrouter';
     ollama_url?: string;
     vlm_model?: string;
     llm_model?: string;
     searxng_url?: string | null;
+    openrouter_api_key?: string | null;
   }) => request<SettingsResponse>('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
 
   scanLabel: (image: string) =>
@@ -125,6 +128,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ identification }),
     }),
+
+  startScanBatch: (images: string[]) =>
+    request<ScanBatchJob>('/scan/batch', { method: 'POST', body: JSON.stringify({ images }) }),
+
+  getScanBatch: (id: string) => request<ScanBatchJob>(`/scan/batch/${id}`),
 
   pullOllamaModel: async (model: string, onEvent: (event: Record<string, unknown>) => void): Promise<void> => {
     const res = await fetch(`${API}/settings/ollama/pull`, {

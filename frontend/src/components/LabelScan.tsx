@@ -164,7 +164,7 @@ export function LabelScan({ onApply }: Props) {
       <div className="scan-head">
         <div>
           <h2>Photo de l'étiquette</h2>
-          <p className="muted">Ollama lit le label, puis un second modèle complète la fiche avec le web.</p>
+          <p className="muted">Ollama ou OpenRouter lit le label. La recherche web est un bouton à part, pas obligatoire.</p>
         </div>
         {preview && (
           <button type="button" className="btn btn-ghost" onClick={reset} disabled={busy}>
