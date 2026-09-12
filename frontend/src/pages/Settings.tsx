@@ -11,6 +11,8 @@ function formatSize(bytes: number | null): string {
 export function Settings() {
   const [data, setData] = useState<SettingsResponse | null>(null);
   const [ollamaUrl, setOllamaUrl] = useState('');
+  const [provider, setProvider] = useState<'ollama' | 'openrouter'>('ollama');
+  const [apiKey, setApiKey] = useState('');
   const [vlmModel, setVlmModel] = useState('');
   const [llmModel, setLlmModel] = useState('');
   const [searxngUrl, setSearxngUrl] = useState('');
@@ -24,6 +26,8 @@ export function Settings() {
     const next = await api.getSettings();
     setData(next);
     setOllamaUrl(next.ollama_url);
+    setProvider(next.ai_provider);
+    setApiKey('');
     setVlmModel(next.vlm_model);
     setLlmModel(next.llm_model);
     setSearxngUrl(next.searxng_url ?? '');
@@ -43,10 +47,12 @@ export function Settings() {
     setNotice(null);
     try {
       const next = await api.saveSettings({
+        ai_provider: provider,
         ollama_url: ollamaUrl.trim(),
         vlm_model: vlmModel.trim(),
         llm_model: llmModel.trim(),
         searxng_url: searxngUrl.trim() || null,
+        ...(apiKey.trim() ? { openrouter_api_key: apiKey.trim() } : {}),
       });
       setData(next);
       setNotice(next.ollama.online ? `Ollama joignable${next.ollama.version ? ` · ${next.ollama.version}` : ''}.` : 'Réglages enregistrés. Ollama ne répond pas encore.');
@@ -111,7 +117,7 @@ export function Settings() {
         <div>
           <h1>Réglages</h1>
           <p className="lede">
-            Branche Ollama, choisis un petit VLM pour l'étiquette et un petit LLM pour compléter la fiche.
+            Ollama en local, ou une clé OpenRouter. Gemma 4 est proposé pour Ollama.
           </p>
         </div>
       </div>
@@ -120,6 +126,31 @@ export function Settings() {
       {notice && <div className="banner ok">{notice}</div>}
 
       <form className="form" onSubmit={(event) => void onSave(event)}>
+        <section className="form-section glass">
+          <h2>Fournisseur IA</h2>
+          <div className="segmented" style={{ marginBottom: 12 }}>
+            <button type="button" className={provider === 'ollama' ? 'active' : ''} onClick={() => setProvider('ollama')}>
+              Ollama
+            </button>
+            <button type="button" className={provider === 'openrouter' ? 'active' : ''} onClick={() => setProvider('openrouter')}>
+              OpenRouter
+            </button>
+          </div>
+          {provider === 'openrouter' && (
+            <label className="field">
+              <span>Clé API OpenRouter {data?.openrouter_api_key_set ? '(déjà enregistrée)' : ''}</span>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={data?.openrouter_api_key_set ? 'Laisser vide pour ne pas changer' : 'sk-or-...'}
+                autoComplete="off"
+              />
+            </label>
+          )}
+        </section>
+
+        {provider === 'ollama' && (
         <section className="form-section glass">
           <h2>Serveur Ollama</h2>
           <p className="muted" style={{ marginBottom: 12 }}>
@@ -147,10 +178,11 @@ export function Settings() {
             </button>
           </div>
         </section>
+        )}
 
         <ModelPicker
           title="Modèle vision (étiquette)"
-          hint="Lit la photo. qwen3-vl:2b est un excellent compromis pour une configuration standard."
+          hint="Lit la photo. Gemma 4 / qwen3-vl en local, ou un modèle OpenRouter."
           value={vlmModel}
           onChange={setVlmModel}
           suggested={data?.suggested_vlm ?? []}
@@ -158,6 +190,7 @@ export function Settings() {
           installedNames={installedNames}
           pulling={pulling}
           onPull={(name) => void onPull(name)}
+          showPull={provider === 'ollama'}
         />
 
         <ModelPicker
@@ -170,6 +203,7 @@ export function Settings() {
           installedNames={installedNames}
           pulling={pulling}
           onPull={(name) => void onPull(name)}
+          showPull={provider === 'ollama'}
         />
 
         {pullStatus && <p className="muted">{pulling} · {pullStatus}</p>}
@@ -227,6 +261,7 @@ function ModelPicker({
   installedNames,
   pulling,
   onPull,
+  showPull = true,
 }: {
   title: string;
   hint: string;
@@ -237,6 +272,7 @@ function ModelPicker({
   installedNames: Set<string>;
   pulling: string | null;
   onPull: (name: string) => void;
+  showPull?: boolean;
 }) {
   const extras = installed.filter((model) => !suggested.some((item) => item.name === model.name));
 
@@ -275,7 +311,7 @@ function ModelPicker({
               </button>
               {present ? (
                 <span className="model-flag">Installé</span>
-              ) : (
+              ) : showPull ? (
                 <button
                   type="button"
                   className="btn"
@@ -284,7 +320,7 @@ function ModelPicker({
                 >
                   {pulling === item.name ? '…' : 'Pull'}
                 </button>
-              )}
+              ) : null}
             </div>
           );
         })}

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { LabelScan, type ScanDraft } from '../components/LabelScan';
+import { BatchLabelScan } from '../components/BatchLabelScan';
 import type { ApogeeEstimate, ApogeeSource, LocationResponse, WinePayload, WineType } from '../types';
 import { WINE_TYPES } from '../types';
 import { TYPE_LABELS, formatWindow } from '../wineStatus';
@@ -74,6 +75,7 @@ export function WineForm() {
   const [estimate, setEstimate] = useState<ApogeeEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [webBusy, setWebBusy] = useState(false);
   const [ready, setReady] = useState(!editing);
 
   useEffect(() => {
@@ -158,6 +160,44 @@ export function WineForm() {
     }));
   }
 
+  async function onWebFill() {
+    if (!form.domaine.trim() && !form.cuvee.trim() && !form.appellation.trim()) {
+      setError('Indique au moins un domaine, une cuvée ou une appellation pour chercher sur le web.');
+      return;
+    }
+    setError(null);
+    setWebBusy(true);
+    try {
+      const result = await api.enrichScan({
+        domaine: form.domaine.trim() || null,
+        cuvee: form.cuvee.trim() || null,
+        type: form.type,
+        region: form.region.trim() || null,
+        appellation: form.appellation.trim() || null,
+        millesime: toInt(form.millesime),
+        cepages: form.cepages.trim() || null,
+        raw_text: [form.domaine, form.cuvee, form.appellation, form.millesime].filter(Boolean).join('\n'),
+        confidence: 1,
+      });
+      applyScan({
+        domaine: result.enrichment.domaine ?? undefined,
+        cuvee: result.enrichment.cuvee ?? undefined,
+        type: result.enrichment.type ?? undefined,
+        region: result.enrichment.region ?? undefined,
+        appellation: result.enrichment.appellation ?? undefined,
+        millesime: result.enrichment.millesime != null ? String(result.enrichment.millesime) : undefined,
+        cepages: result.enrichment.cepages ?? undefined,
+        domaine_info: result.enrichment.domaine_info ?? undefined,
+        accords: result.enrichment.accords ?? undefined,
+        potentiel_garde: result.enrichment.potentiel_garde ?? undefined,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Recherche web impossible');
+    } finally {
+      setWebBusy(false);
+    }
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -229,8 +269,12 @@ export function WineForm() {
 
       <form className="form" onSubmit={(event) => void onSubmit(event)}>
         <LabelScan onApply={applyScan} />
+        <BatchLabelScan onApply={applyScan} />
         <section className="form-section glass">
           <h2>L'essentiel</h2>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Tu peux remplir à la main, puis compléter via le web — sans photo.
+          </p>
           <label className="field">
             <span>Domaine *</span>
             <input value={form.domaine} onChange={(e) => update('domaine', e.target.value)} required autoComplete="off" />
@@ -239,6 +283,9 @@ export function WineForm() {
             <span>Cuvée</span>
             <input value={form.cuvee} onChange={(e) => update('cuvee', e.target.value)} autoComplete="off" />
           </label>
+          <button type="button" className="btn" disabled={webBusy || busy} onClick={() => void onWebFill()}>
+            {webBusy ? 'Recherche web…' : 'Compléter sur le web'}
+          </button>
           <div className="field">
             <span>Type</span>
             <div className="segmented">

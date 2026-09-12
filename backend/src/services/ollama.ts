@@ -41,7 +41,7 @@ export async function ollamaTags(baseUrl: string, timeoutMs = 12_000): Promise<O
     ]
       .join(' ')
       .toLowerCase();
-    const vision = /vl|vision|llava|moondream|bakllava|minicpm|pixtral|ministral/.test(families);
+    const vision = /vl|vision|llava|moondream|bakllava|minicpm|pixtral|ministral|gemma3|gemma4/.test(families);
     return {
       name,
       size: typeof model.size === 'number' ? model.size : null,

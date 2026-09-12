@@ -119,6 +119,7 @@ export interface OllamaStatus {
 }
 
 export interface AppSettings {
+  ai_provider: 'ollama' | 'openrouter';
   ollama_url: string;
   vlm_model: string;
   llm_model: string;
@@ -126,6 +127,7 @@ export interface AppSettings {
 }
 
 export interface SettingsResponse extends AppSettings {
+  openrouter_api_key_set: boolean;
   suggested_vlm: SuggestedModel[];
   suggested_llm: SuggestedModel[];
   ollama: OllamaStatus;
@@ -165,4 +167,20 @@ export interface LabelScanResponse {
 export interface EnrichScanResponse {
   enrichment: WineEnrichment;
   model: string;
+}
+
+export interface ScanBatchItem {
+  id: string;
+  status: 'queued' | 'running' | 'done' | 'error';
+  error: string | null;
+  identification: WineIdentification | null;
+  model: string | null;
+}
+
+export interface ScanBatchJob {
+  id: string;
+  created_at: string;
+  total: number;
+  done: number;
+  items: ScanBatchItem[];
 }

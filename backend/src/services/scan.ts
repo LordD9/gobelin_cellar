@@ -1,8 +1,7 @@
 import { badRequest } from '../http/errors';
 import type { EnrichScanResponse, LabelScanResponse, WineEnrichment, WineIdentification } from '../types/scan';
-import { HttpError } from '../http/errors';
 import { LABEL_IMAGE_MAX_SIDE, normalizeLabelImage } from './labelImage';
-import { ollamaChat } from './ollama';
+import { jsonComplete, visionComplete } from './aiChat';
 import {
   assertImageSize,
   extractJsonObject,
@@ -67,32 +66,16 @@ uncertain_fields : noms des champs peu sûrs.`;
 
 export async function analyzeLabel(image: unknown): Promise<LabelScanResponse> {
   const { base64 } = parseImageOrThrow(image);
-  const settings = await getSettings();
   const prepared = await normalizeLabelImage(base64, LABEL_IMAGE_MAX_SIDE);
 
-  const content = await askVision(settings.ollama_url, settings.vlm_model, prepared);
+  const { content, model } = await visionComplete(prepared, VLM_PROMPT);
 
   const identification = identificationFromModel(extractJsonObject(content));
   if (!identification.domaine && !identification.raw_text) {
     throw badRequest("Impossible de lire l'étiquette. Reprends la photo de plus près, bien éclairée.");
   }
 
-  return { identification, model: settings.vlm_model };
-}
-
-function askVision(baseUrl: string, model: string, imageBase64: string): Promise<string> {
-  return ollamaChat({
-    baseUrl,
-    model,
-    format: 'json',
-    messages: [
-      {
-        role: 'user',
-        content: VLM_PROMPT,
-        images: [imageBase64],
-      },
-    ],
-  });
+  return { identification, model };
 }
 
 export async function enrichIdentification(raw: unknown): Promise<EnrichScanResponse> {
@@ -107,12 +90,7 @@ export async function enrichIdentification(raw: unknown): Promise<EnrichScanResp
     .map((source, index) => `${index + 1}. ${source.title}\n${source.url}\n${source.snippet}`)
     .join('\n\n');
 
-  const content = await ollamaChat({
-    baseUrl: settings.ollama_url,
-    model: settings.llm_model,
-    format: 'json',
-    messages: [{ role: 'user', content: llmPrompt(identification, sourcesText) }],
-  });
+  const { content, model } = await jsonComplete(llmPrompt(identification, sourcesText));
 
   const parsed = extractJsonObject(content);
   const merged = identificationFromModel({ ...identification, ...parsed });
@@ -129,7 +107,7 @@ export async function enrichIdentification(raw: unknown): Promise<EnrichScanResp
     sources,
   };
 
-  return { enrichment, model: settings.llm_model };
+  return { enrichment, model };
 }
 
 function preferKnown(label: WineIdentification, filled: WineIdentification): WineIdentification {
