@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
+import { injectBasePath } from './basePath';
 
-export function attachFrontend(app: Express): string | null {
+export function attachFrontend(app: Express, basePath = ''): string | null {
   const publicDir = process.env.PUBLIC_DIR;
   if (!publicDir) {
     return null;
@@ -36,7 +37,10 @@ export function attachFrontend(app: Express): string | null {
       next();
       return;
     }
-    res.sendFile(indexFile);
+    const html = injectBasePath(fs.readFileSync(indexFile, 'utf8'), basePath);
+    res.setHeader('Cache-Control', 'no-cache');
+    res.type('html');
+    res.send(html);
   });
 
   return resolved;

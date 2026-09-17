@@ -50,6 +50,7 @@ export interface AppSettings {
   llm_model: string;
   searxng_url: string | null;
   openrouter_api_key: string;
+  base_path: string;
 }
 
 export interface OllamaModelInfo {
@@ -68,6 +69,7 @@ export interface OllamaStatus {
 
 export interface SettingsResponse extends Omit<AppSettings, 'openrouter_api_key'> {
   openrouter_api_key_set: boolean;
+  base_path_locked: boolean;
   suggested_vlm: SuggestedModel[];
   suggested_llm: SuggestedModel[];
   ollama: OllamaStatus;

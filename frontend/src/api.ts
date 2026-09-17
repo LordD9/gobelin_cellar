@@ -13,11 +13,10 @@ import type {
   WineResponse,
   WineType,
 } from './types';
-
-const API = '/api';
+import { apiRoot } from './basePath';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(`${apiRoot()}${path}`, {
     ...init,
     headers: {
       ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
@@ -118,6 +117,7 @@ export const api = {
     llm_model?: string;
     searxng_url?: string | null;
     openrouter_api_key?: string | null;
+    base_path?: string | null;
   }) => request<SettingsResponse>('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
 
   scanLabel: (image: string) =>
@@ -135,7 +135,7 @@ export const api = {
   getScanBatch: (id: string) => request<ScanBatchJob>(`/scan/batch/${id}`),
 
   pullOllamaModel: async (model: string, onEvent: (event: Record<string, unknown>) => void): Promise<void> => {
-    const res = await fetch(`${API}/settings/ollama/pull`, {
+    const res = await fetch(`${apiRoot()}/settings/ollama/pull`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model }),

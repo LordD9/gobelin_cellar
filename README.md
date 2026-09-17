@@ -67,6 +67,7 @@ Variables utiles (fichier `.env` ou bloc `environment` du compose) :
 | `OLLAMA_VLM_MODEL` | `qwen3-vl:2b` | Défaut vision si rien n’est enregistré |
 | `OLLAMA_LLM_MODEL` | `llama3.2:3b` | Défaut texte si rien n’est enregistré |
 | `SEARXNG_URL` | — | Moteur de recherche self-hosted (optionnel) |
+| `BASE_PATH` | — | Préfixe d’URL type Sonarr, ex. `/gobelincellar` |
 
 Les modèles et l’URL Ollama se changent aussi dans **Réglages**, sans redémarrer le conteneur.
 
@@ -80,6 +81,22 @@ Le compose ajoute `extra_hosts: host.docker.internal:host-gateway` pour joindre 
 ### Reverse proxy
 
 Le service n’écoute que du HTTP interne (`3001`). Pointe Caddy, Nginx Proxy Manager ou Traefik vers ce port. Pour le scan, autorise des requêtes longues (plusieurs minutes) : un modèle vision sur CPU n’est pas instantané.
+
+Pour un sous-chemin (`https://mondomaine.com/gobelincellar`), comme Sonarr :
+
+1. Dans **Réglages** (ou `BASE_PATH=/gobelincellar` dans `.env`), indique le préfixe.
+2. Redémarre le conteneur.
+3. Côté proxy, **ne pas retirer** le préfixe (`handle_path` / `StripPrefix` cassent les liens).
+
+Exemple Caddy :
+
+```
+mondomaine.com {
+  handle /gobelincellar* {
+    reverse_proxy 127.0.0.1:8080
+  }
+}
+```
 
 Un exemple de labels Traefik est commenté dans les fichiers Compose.
 
