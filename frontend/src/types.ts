@@ -124,10 +124,12 @@ export interface AppSettings {
   vlm_model: string;
   llm_model: string;
   searxng_url: string | null;
+  base_path: string;
 }
 
 export interface SettingsResponse extends AppSettings {
   openrouter_api_key_set: boolean;
+  base_path_locked: boolean;
   suggested_vlm: SuggestedModel[];
   suggested_llm: SuggestedModel[];
   ollama: OllamaStatus;

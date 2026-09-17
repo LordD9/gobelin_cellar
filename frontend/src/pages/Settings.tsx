@@ -16,6 +16,7 @@ export function Settings() {
   const [vlmModel, setVlmModel] = useState('');
   const [llmModel, setLlmModel] = useState('');
   const [searxngUrl, setSearxngUrl] = useState('');
+  const [basePath, setBasePath] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -31,6 +32,7 @@ export function Settings() {
     setVlmModel(next.vlm_model);
     setLlmModel(next.llm_model);
     setSearxngUrl(next.searxng_url ?? '');
+    setBasePath(next.base_path ?? '');
   }
 
   useEffect(() => {
@@ -52,10 +54,22 @@ export function Settings() {
         vlm_model: vlmModel.trim(),
         llm_model: llmModel.trim(),
         searxng_url: searxngUrl.trim() || null,
+        base_path: basePath.trim() || '',
         ...(apiKey.trim() ? { openrouter_api_key: apiKey.trim() } : {}),
       });
       setData(next);
-      setNotice(next.ollama.online ? `Ollama joignable${next.ollama.version ? ` · ${next.ollama.version}` : ''}.` : 'Réglages enregistrés. Ollama ne répond pas encore.');
+      const pathChanged = (next.base_path || '') !== (data?.base_path || '');
+      if (pathChanged) {
+        setNotice(
+          next.base_path
+            ? `Chemin enregistré : ${next.base_path}. Redémarre le conteneur, puis ouvre l’app à cette adresse.`
+            : 'Chemin d’URL vidé. Redémarre le conteneur pour servir l’app à la racine.',
+        );
+      } else if (next.ollama.online) {
+        setNotice(`Ollama joignable${next.ollama.version ? ` · ${next.ollama.version}` : ''}.`);
+      } else {
+        setNotice('Réglages enregistrés. Ollama ne répond pas encore.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Enregistrement impossible');
     } finally {
@@ -126,6 +140,29 @@ export function Settings() {
       {notice && <div className="banner ok">{notice}</div>}
 
       <form className="form" onSubmit={(event) => void onSave(event)}>
+        <section className="form-section glass">
+          <h2>Chemin d’URL (reverse proxy)</h2>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Comme Sonarr : si Caddy (ou autre) sert l’app sous{' '}
+            <code>https://mondomaine.com/gobelincellar</code>, indique{' '}
+            <code>/gobelincellar</code>. Ne pas utiliser <code>handle_path</code> (il enlève le préfixe).
+            Vide = racine. Un changement nécessite un redémarrage.
+          </p>
+          <label className="field">
+            <span>Préfixe</span>
+            <input
+              value={basePath}
+              onChange={(e) => setBasePath(e.target.value)}
+              placeholder="/gobelincellar"
+              autoComplete="off"
+              disabled={Boolean(data?.base_path_locked)}
+            />
+          </label>
+          {data?.base_path_locked && (
+            <p className="muted">Fixé par la variable d’environnement <code>BASE_PATH</code>.</p>
+          )}
+        </section>
+
         <section className="form-section glass">
           <h2>Fournisseur IA</h2>
           <div className="segmented" style={{ marginBottom: 12 }}>

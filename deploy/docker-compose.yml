@@ -28,6 +28,7 @@ services:
       PUBLIC_DIR: /app/public
       TZ: ${TZ:-Europe/Paris}
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      BASE_PATH: ${BASE_PATH:-}
     volumes:
       - ${DATA_DIR:-./data}:/data
     healthcheck:

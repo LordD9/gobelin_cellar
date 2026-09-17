@@ -12,17 +12,15 @@ import { winesRouter } from './routes/wines';
 import { settingsRouter } from './routes/settings';
 import { scanRouter } from './routes/scan';
 import { attachFrontend } from './static';
+import { envLocksBasePath, resolveBasePath, stripBasePath } from './basePath';
+import { getSettings } from './services/settings';
 
 dotenv.config();
 
-const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-
-app.get('/api/health', async (_req, res) => {
+async function healthHandler(_req: express.Request, res: express.Response): Promise<void> {
   try {
     const tables = await getTableNames();
     res.json({
@@ -35,33 +33,56 @@ app.get('/api/health', async (_req, res) => {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
     res.status(500).json({ status: 'error', message });
   }
-});
+}
 
-app.use('/api/locations', locationsRouter);
-app.use('/api/wines', winesRouter);
-app.use('/api/dashboard', dashboardRouter);
-app.use('/api/apogee', apogeeRouter);
-app.use('/api/settings', settingsRouter);
-app.use('/api/scan', scanRouter);
+function createApp(basePath: string): express.Express {
+  const app = express();
+  app.use(cors());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(stripBasePath(basePath));
 
-app.use('/api', (_req, _res, next) => {
-  next(new HttpError(404, 'Route introuvable'));
-});
+  app.get('/api/health', (req, res, next) => {
+    void healthHandler(req, res).catch(next);
+  });
 
-const publicDir = attachFrontend(app);
-app.use(errorHandler);
+  app.use('/api/locations', locationsRouter);
+  app.use('/api/wines', winesRouter);
+  app.use('/api/dashboard', dashboardRouter);
+  app.use('/api/apogee', apogeeRouter);
+  app.use('/api/settings', settingsRouter);
+  app.use('/api/scan', scanRouter);
+
+  app.use('/api', (_req, _res, next) => {
+    next(new HttpError(404, 'Route introuvable'));
+  });
+
+  const publicDir = attachFrontend(app, basePath);
+  app.use(errorHandler);
+  if (publicDir) {
+    console.log(`Frontend statique : ${publicDir}`);
+  }
+  if (basePath) {
+    console.log(`Chemin d’URL (reverse proxy) : ${basePath}`);
+  }
+  return app;
+}
 
 async function start(): Promise<void> {
   const dbPath = resolveDatabasePath();
   await initDatabase(dbPath);
   await seedApogeeRules();
   console.log(`Base SQLite prête : ${dbPath}`);
-  if (publicDir) {
-    console.log(`Frontend statique : ${publicDir}`);
+
+  const settings = await getSettings();
+  const basePath = resolveBasePath(process.env.BASE_PATH, settings.base_path);
+  if (envLocksBasePath()) {
+    console.log('BASE_PATH défini par l’environnement (prioritaire sur les réglages).');
   }
 
+  const app = createApp(basePath);
   const server = app.listen(PORT, HOST, () => {
-    console.log(`Serveur démarré sur http://${HOST}:${PORT}`);
+    const suffix = basePath || '';
+    console.log(`Serveur démarré sur http://${HOST}:${PORT}${suffix}`);
   });
 
   const stop = (signal: string) => {
