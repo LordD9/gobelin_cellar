@@ -269,7 +269,7 @@ export function WineForm() {
 
       <form className="form" onSubmit={(event) => void onSubmit(event)}>
         <LabelScan onApply={applyScan} />
-        <BatchLabelScan onApply={applyScan} />
+        {!editing && <BatchLabelScan onApply={applyScan} />}
         <section className="form-section glass">
           <h2>L'essentiel</h2>
           <p className="muted" style={{ marginBottom: 12 }}>

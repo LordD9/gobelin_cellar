@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { analyzeLabel, enrichIdentification } from '../services/scan';
-import { createBatchJob, getBatchJob } from '../services/scanBatch';
+import { createBatchJob, getBatchJob, listBatchJobs } from '../services/scanBatch';
 import { asRecord } from '../validation';
 import { HttpError } from '../http/errors';
 
@@ -17,13 +17,17 @@ scanRouter.post('/enrich', async (req, res) => {
   res.json(await enrichIdentification(identification));
 });
 
-scanRouter.post('/batch', async (req, res) => {
-  const body = asRecord(req.body);
-  res.status(202).json(await Promise.resolve(createBatchJob(body.images)));
+scanRouter.get('/batch', async (_req, res) => {
+  res.json(await listBatchJobs());
 });
 
-scanRouter.get('/batch/:id', (req, res) => {
-  const job = getBatchJob(String(req.params.id));
+scanRouter.post('/batch', async (req, res) => {
+  const body = asRecord(req.body);
+  res.status(202).json(await createBatchJob(body.images));
+});
+
+scanRouter.get('/batch/:id', async (req, res) => {
+  const job = await getBatchJob(String(req.params.id));
   if (!job) throw new HttpError(404, 'Lot introuvable');
   res.json(job);
 });
