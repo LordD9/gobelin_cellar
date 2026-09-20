@@ -59,4 +59,25 @@ CREATE TABLE IF NOT EXISTS app_settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS scan_jobs (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  total INTEGER NOT NULL,
+  done INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS scan_items (
+  id TEXT PRIMARY KEY,
+  job_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  status TEXT NOT NULL,
+  error TEXT,
+  identification TEXT,
+  model TEXT,
+  image TEXT,
+  FOREIGN KEY (job_id) REFERENCES scan_jobs(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_scan_items_job ON scan_items(job_id, position);
 `.trim();

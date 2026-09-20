@@ -184,5 +184,6 @@ export interface ScanBatchJob {
   created_at: string;
   total: number;
   done: number;
+  percent: number;
   items: ScanBatchItem[];
 }

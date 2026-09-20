@@ -14,6 +14,7 @@ import { scanRouter } from './routes/scan';
 import { attachFrontend } from './static';
 import { envLocksBasePath, resolveBasePath, stripBasePath } from './basePath';
 import { getSettings } from './services/settings';
+import { resumeScanQueue } from './services/scanBatch';
 
 dotenv.config();
 
@@ -71,6 +72,7 @@ async function start(): Promise<void> {
   const dbPath = resolveDatabasePath();
   await initDatabase(dbPath);
   await seedApogeeRules();
+  await resumeScanQueue();
   console.log(`Base SQLite prête : ${dbPath}`);
 
   const settings = await getSettings();

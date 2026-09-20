@@ -132,6 +132,8 @@ export const api = {
   startScanBatch: (images: string[]) =>
     request<ScanBatchJob>('/scan/batch', { method: 'POST', body: JSON.stringify({ images }) }),
 
+  listScanBatches: () => request<ScanBatchJob[]>('/scan/batch'),
+
   getScanBatch: (id: string) => request<ScanBatchJob>(`/scan/batch/${id}`),
 
   pullOllamaModel: async (model: string, onEvent: (event: Record<string, unknown>) => void): Promise<void> => {

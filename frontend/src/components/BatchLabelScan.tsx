@@ -8,20 +8,37 @@ interface Props {
   onApply: (draft: ScanDraft) => void;
 }
 
+function statusLabel(status: ScanBatchJob['items'][number]['status']): string {
+  if (status === 'queued') return 'en attente';
+  if (status === 'running') return 'lecture…';
+  if (status === 'error') return 'erreur';
+  return 'lu';
+}
+
 export function BatchLabelScan({ onApply }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [job, setJob] = useState<ScanBatchJob | null>(null);
+  const [jobs, setJobs] = useState<ScanBatchJob[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  async function refresh() {
+    const list = await api.listScanBatches();
+    setJobs(list);
+  }
+
   useEffect(() => {
-    if (!job || job.done >= job.total) return;
+    void refresh().catch(() => undefined);
+  }, []);
+
+  const pending = jobs.some((job) => job.done < job.total);
+  useEffect(() => {
+    if (!pending) return;
     const handle = window.setInterval(() => {
-      api.getScanBatch(job.id).then(setJob).catch(() => undefined);
+      void refresh().catch(() => undefined);
     }, 1500);
     return () => window.clearInterval(handle);
-  }, [job]);
+  }, [pending]);
 
   async function onFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -34,8 +51,8 @@ export function BatchLabelScan({ onApply }: Props) {
         images.push(await compressImage(file));
       }
       const created = await api.startScanBatch(images);
-      setJob(created);
-      setNotice(`${created.total} photo(s) en file. Tu peux laisser tourner.`);
+      setNotice(`${created.total} photo(s) en file. Tu peux quitter la page, elles restent dans Ajouts.`);
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lot impossible');
     } finally {
@@ -75,15 +92,13 @@ export function BatchLabelScan({ onApply }: Props) {
     }
   }
 
-  const running = job != null && job.done < job.total;
-
   return (
     <section className="form-section glass scan-card">
       <div className="scan-head">
         <div>
-          <h2>Lot de photos</h2>
+          <h2>File d’attente (lots)</h2>
           <p className="muted">
-            Plusieurs étiquettes d’un coup. Analyse en arrière-plan, sans rester bloqué sur chaque image.
+            Les photos restent côté serveur. Revenir ici pour voir l’avancement et créer les fiches.
           </p>
         </div>
       </div>
@@ -101,38 +116,59 @@ export function BatchLabelScan({ onApply }: Props) {
         }}
       />
       <button type="button" className="btn btn-primary" disabled={busy} onClick={() => inputRef.current?.click()}>
-        {busy ? 'Préparation…' : 'Choisir plusieurs photos'}
+        {busy ? 'Préparation…' : 'Ajouter des photos à la file'}
       </button>
-      {job && (
-        <p className="muted" style={{ marginTop: 10 }}>
-          {job.done}/{job.total} {running ? 'en cours…' : 'terminé'}
-        </p>
-      )}
-      {job && (
-        <ul className="model-installed" style={{ marginTop: 12 }}>
-          {job.items.map((item, index) => (
-            <li key={item.id}>
-              <strong>Photo {index + 1}</strong>
-              <span className="muted">
-                {item.status === 'queued' && 'en attente'}
-                {item.status === 'running' && 'lecture…'}
-                {item.status === 'error' && (item.error || 'erreur')}
-                {item.status === 'done' && (item.identification?.domaine || 'lu')}
-              </span>
-              {item.status === 'done' && item.identification && (
-                <span style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" className="btn" onClick={() => applyIdent(item.identification!)}>
-                    Remplir
-                  </button>
-                  <button type="button" className="btn" onClick={() => void createWine(item.identification!)}>
-                    Créer la fiche
-                  </button>
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      {jobs.length === 0 && <p className="muted" style={{ marginTop: 10 }}>Aucun lot pour l’instant.</p>}
+      {jobs.map((job) => {
+        const running = job.done < job.total;
+        return (
+          <div key={job.id} style={{ marginTop: 16 }}>
+            <p className="muted">
+              Lot {job.created_at.slice(0, 16).replace('T', ' ')} — {job.percent}% ({job.done}/{job.total})
+              {running ? ' en cours' : ' terminé'}
+            </p>
+            <div
+              style={{
+                height: 8,
+                background: 'rgba(255,255,255,0.12)',
+                borderRadius: 99,
+                overflow: 'hidden',
+                margin: '6px 0 10px',
+              }}
+            >
+              <div
+                style={{
+                  width: `${job.percent}%`,
+                  height: '100%',
+                  background: running ? '#c4a574' : '#6aa84f',
+                }}
+              />
+            </div>
+            <ul className="model-installed">
+              {job.items.map((item, index) => (
+                <li key={item.id}>
+                  <strong>Photo {index + 1}</strong>
+                  <span className="muted">
+                    {statusLabel(item.status)}
+                    {item.status === 'error' && item.error ? ` · ${item.error}` : ''}
+                    {item.status === 'done' && item.identification?.domaine ? ` · ${item.identification.domaine}` : ''}
+                  </span>
+                  {item.status === 'done' && item.identification && (
+                    <span style={{ display: 'flex', gap: 8 }}>
+                      <button type="button" className="btn" onClick={() => applyIdent(item.identification!)}>
+                        Remplir
+                      </button>
+                      <button type="button" className="btn" onClick={() => void createWine(item.identification!)}>
+                        Créer la fiche
+                      </button>
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </section>
   );
 }
